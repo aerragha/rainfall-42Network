@@ -1,4 +1,4 @@
-- After running the program, we found that it read from the stdout.
+- After running the program, we found that it read from the stdin.
 
 - We checked if we can do a buffer overflow, so we tried to enter a big string with more than 100 chars.
 
