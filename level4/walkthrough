@@ -1,4 +1,4 @@
-- This level is similar to the previous level. just this level we the call to the system function it will be with this arg ("/bin/cat /home/user/level5/.pass")
+- This level is similar to the previous level. just this level the call to the system function it will be with this arg ("/bin/cat /home/user/level5/.pass")
 
 - This time the comparison it's with the value '0x1025544' = 16930116, and we know that we can't use padding more than 512 cuz the fget buffer is just 512.
 
