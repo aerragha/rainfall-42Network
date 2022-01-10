@@ -13,13 +13,13 @@ gdb> nexti
 
 - After some steps, we see that the program calls atoi function and crash after that Segmentation fault.
 
-- We started the program again with an argument, we found that the program compare the returned value from atoi to an value 0x1a7=423 and after that the program lunch a new shell using execv func.
+- We started the program again with an argument, we found that the program compare the returned value from atoi to a value 0x1a7=423, and after that the program launch a new shell using execv func.
 
 0x08048ed9 <+25>:	cmp    eax,0x1a7
 [...]
 0x08048f51 <+145>:	call   0x8054640 <execv>
 
-- We tried to run the program with 423 as argument.
+- We tried to run the program with 423 as an argument.
 
 - Finally, we entered the shell as level1 user and we got the flag.
 
