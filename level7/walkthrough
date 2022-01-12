@@ -1,6 +1,6 @@
 - When we run the program without arguments we got Segmentation fault (core dumped)
 
-- After trying lot 2 arguments we got:
+- After trying with 2 arguments we got:
 
 $> ./level7 "eee" "ddd"
 ~~
