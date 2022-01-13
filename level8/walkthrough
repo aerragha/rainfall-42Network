@@ -11,7 +11,7 @@ login
 
 - The is a use-after-free (UAF) exploit, if we enter “auth AAAA” the code allocates memory and stores it in auth then copies the name AAAA to auth->name.
 
-- We can’t overflow the name since there is a length checking strlen.
+- We can’t overflow the name since there is a length checking using fstrlen.
 
 - The bug here is that reset frees auth allocated memory but auth still points to that memory location which could contain anything.
 
