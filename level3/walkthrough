@@ -9,7 +9,7 @@
 - In the manual page of printf we found this in the bugs section:
 Code such as printf(foo); often indicates a bug, since foo may contain a % character. If foo comes from untrusted user input, it may contain %n, causing the printf() call to write to memory and creating a security hole.
 
-- So we will exploit the program via the printf function with "Format String Vulnerability Exploitation" (https://www.exploit-db.com/papers/23985)
+- So we will exploit the program via the printf function with "Format String Vulnerability Exploitation" (https://www.exploit-db.com/papers/23985 - https://codearcana.com/posts/2013/05/02/introduction-to-format-string-exploits.html)
 
 - We need in the first to extract the address of the m variable.
 
